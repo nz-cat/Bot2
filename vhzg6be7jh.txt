@@ -1,0 +1,654 @@
+local keyGUI = Instance.new("ScreenGui")
+keyGUI.Name = "W31rdHub | KeySystem"
+keyGUI.ResetOnSpawn = false
+keyGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+keyGUI.IgnoreGuiInset = true
+keyGUI.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+local blackFrame = Instance.new("Frame")
+blackFrame.Name = "BlackFrame"
+blackFrame.Size = UDim2.new(1, 0, 1, 0)
+blackFrame.Position = UDim2.new(0, 0, 0, 0)
+blackFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+blackFrame.BackgroundTransparency = 0.7
+blackFrame.BorderSizePixel = 0
+blackFrame.ZIndex = 1
+blackFrame.Parent = keyGUI
+
+local borderTop = Instance.new("Frame")
+borderTop.Name = "BorderTop"
+borderTop.Size = UDim2.new(1, 0, 0, 5)
+borderTop.Position = UDim2.new(0, 0, 0, 0)
+borderTop.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+borderTop.BackgroundTransparency = 1
+borderTop.BorderSizePixel = 0
+borderTop.ZIndex = 2
+borderTop.Parent = keyGUI
+
+local borderBottom = Instance.new("Frame")
+borderBottom.Name = "BorderBottom"
+borderBottom.Size = UDim2.new(1, 0, 0, 5)
+borderBottom.Position = UDim2.new(0, 0, 1, -5)
+borderBottom.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+borderBottom.BackgroundTransparency = 1
+borderBottom.BorderSizePixel = 0
+borderBottom.ZIndex = 2
+borderBottom.Parent = keyGUI
+
+local borderLeft = Instance.new("Frame")
+borderLeft.Name = "BorderLeft"
+borderLeft.Size = UDim2.new(0, 5, 1, 0)
+borderLeft.Position = UDim2.new(0, 0, 0, 0)
+borderLeft.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+borderLeft.BackgroundTransparency = 1
+borderLeft.BorderSizePixel = 0
+borderLeft.ZIndex = 2
+borderLeft.Parent = keyGUI
+
+local borderRight = Instance.new("Frame")
+borderRight.Name = "BorderRight"
+borderRight.Size = UDim2.new(0, 5, 1, 0)
+borderRight.Position = UDim2.new(1, -5, 0, 0)
+borderRight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+borderRight.BackgroundTransparency = 1
+borderRight.BorderSizePixel = 0
+borderRight.ZIndex = 2
+borderRight.Parent = keyGUI
+
+local mainPanel = Instance.new("Frame")
+mainPanel.Name = "MainPanel"
+mainPanel.Size = UDim2.new(0, 280, 0, 160)
+mainPanel.Position = UDim2.new(0.5, -140, 1, 20)
+mainPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+mainPanel.BorderSizePixel = 0
+mainPanel.Active = true
+mainPanel.Draggable = false
+mainPanel.ZIndex = 3
+mainPanel.Parent = keyGUI
+
+local panelCorner = Instance.new("UICorner")
+panelCorner.CornerRadius = UDim.new(0, 12)
+panelCorner.Parent = mainPanel
+
+local panelStroke = Instance.new("UIStroke")
+panelStroke.Color = Color3.fromRGB(40, 40, 45)
+panelStroke.Thickness = 3
+panelStroke.Transparency = 1
+panelStroke.Parent = mainPanel
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, 0, 0, 30)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "W31rd_Hub • Key System"
+titleLabel.TextColor3 = Color3.fromRGB(230, 230, 235)
+titleLabel.TextSize = 15
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Parent = mainPanel
+
+local keyInput = Instance.new("TextBox")
+keyInput.Name = "KeyInput"
+keyInput.Size = UDim2.new(1, -40, 0, 35)
+keyInput.Position = UDim2.new(0, 20, 0, 40)
+keyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+keyInput.BorderSizePixel = 0
+keyInput.Text = ""
+keyInput.TextColor3 = Color3.fromRGB(220, 220, 225)
+keyInput.TextSize = 15
+keyInput.Font = Enum.Font.Gotham
+keyInput.PlaceholderText = "Enter Your Key"
+keyInput.PlaceholderColor3 = Color3.fromRGB(140, 140, 150)
+keyInput.ClearTextOnFocus = false
+keyInput.Parent = mainPanel
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 7)
+inputCorner.Parent = keyInput
+
+local actionsRow = Instance.new("Frame")
+actionsRow.Name = "ActionsRow"
+actionsRow.Size = UDim2.new(1, -20, 0, 40)
+actionsRow.Position = UDim2.new(0, 10, 0, 90)
+actionsRow.BackgroundTransparency = 1
+actionsRow.Parent = mainPanel
+
+local verifyButton = Instance.new("TextButton")
+verifyButton.Name = "VerifyButton"
+verifyButton.Size = UDim2.new(0.5, -6, 1, 0)
+verifyButton.Position = UDim2.new(0, 0, 0, 0)
+verifyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+verifyButton.BorderSizePixel = 0
+verifyButton.Text = "Check Key"
+verifyButton.TextColor3 = Color3.fromRGB(220, 220, 225)
+verifyButton.TextSize = 14
+verifyButton.Font = Enum.Font.GothamBold
+verifyButton.AutoButtonColor = false
+verifyButton.Parent = actionsRow
+
+local verifyCorner = Instance.new("UICorner")
+verifyCorner.CornerRadius = UDim.new(0, 7)
+verifyCorner.Parent = verifyButton
+
+local discordButton = Instance.new("TextButton")
+discordButton.Name = "DiscordButton"
+discordButton.Size = UDim2.new(0.5, -6, 1, 0)
+discordButton.Position = UDim2.new(0.5, 6, 0, 0)
+discordButton.BackgroundColor3 = Color3.fromRGB(40, 140, 100)
+discordButton.BorderSizePixel = 0
+discordButton.Text = "Get Key (Discord)"
+discordButton.TextColor3 = Color3.fromRGB(220, 220, 225)
+discordButton.TextSize = 13
+discordButton.Font = Enum.Font.GothamBold
+discordButton.AutoButtonColor = false
+discordButton.Parent = actionsRow
+
+local discordCorner = Instance.new("UICorner")
+discordCorner.CornerRadius = UDim.new(0, 7)
+discordCorner.Parent = discordButton
+
+local feedbackLabel = Instance.new("TextLabel")
+feedbackLabel.Name = "FeedbackLabel"
+feedbackLabel.Size = UDim2.new(1, -20, 0, 25)
+feedbackLabel.Position = UDim2.new(0, 10, 0, 130)
+feedbackLabel.BackgroundTransparency = 1
+feedbackLabel.Text = ""
+feedbackLabel.TextColor3 = Color3.fromRGB(200, 70, 70)
+feedbackLabel.TextSize = 12
+feedbackLabel.Font = Enum.Font.Gotham
+feedbackLabel.TextWrapped = true
+feedbackLabel.Parent = mainPanel
+
+local inviteLink = "https://discord.gg/7kGUDjJSZh"
+local cooldowns = {verify = false, discord = false}
+local tweenService = game:GetService("TweenService")
+local appearTween = tweenService:Create(
+	mainPanel,
+	TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+	{Position = UDim2.new(0.5, -140, 0.5, -80)}
+)
+appearTween:Play()
+
+local function destroyGUI(callback)
+	local strokeTween = tweenService:Create(
+		panelStroke,
+		TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{Transparency = 1}
+	)
+	strokeTween:Play()
+	
+	local disappearTween = tweenService:Create(
+		mainPanel,
+		TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{Position = UDim2.new(0.5, -140, 1, 20)}
+	)
+	disappearTween:Play()
+	disappearTween.Completed:Connect(function()
+		keyGUI:Destroy()
+		if callback then
+			task.spawn(callback)
+		end
+	end)
+end
+
+local function setBorderColorTemp(color, duration)
+	if borderColorCoroutine then
+		task.cancel(borderColorCoroutine)
+	end
+	
+	panelStroke.Transparency = 0
+	panelStroke.Color = color
+	panelStroke.Thickness = 3
+	
+	borderColorCoroutine = task.spawn(function()
+		task.wait(duration)
+		
+		local fadeTween = tweenService:Create(
+			panelStroke,
+			TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{Transparency = 1}
+		)
+		fadeTween:Play()
+		fadeTween.Completed:Wait()
+		panelStroke.Color = Color3.fromRGB(40, 40, 45)
+		borderColorCoroutine = nil
+	end)
+end
+
+local function setBorderColorPermanent(color)
+	if borderColorCoroutine then
+		task.cancel(borderColorCoroutine)
+		borderColorCoroutine = nil
+	end
+	panelStroke.Transparency = 0
+	panelStroke.Color = color
+	panelStroke.Thickness = 3
+end
+
+local function animateButton(button)
+	local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local goal = {BackgroundColor3 = button.BackgroundColor3:Lerp(Color3.new(0,0,0), 0.2)}
+	local tween = tweenService:Create(button, tweenInfo, goal)
+	tween:Play()
+	tween.Completed:Wait()
+	local revert = {BackgroundColor3 = button.BackgroundColor3:Lerp(Color3.new(0,0,0), -0.2)}
+	local revertTween = tweenService:Create(button, TweenInfo.new(0.1), revert)
+	revertTween:Play()
+end
+
+local function setFeedback(text, color)
+	feedbackLabel.Text = text
+	feedbackLabel.TextColor3 = color
+	local currentText = text
+	task.delay(2, function()
+		if feedbackLabel.Text == currentText then
+			feedbackLabel.Text = ""
+		end
+	end)
+end
+
+local function copyToBuffer(text)
+	local success = false
+	if setclipboard then
+		setclipboard(text)
+		success = true
+	elseif toclipboard then
+		toclipboard(text)
+		success = true
+	elseif Clipboard and Clipboard.set then
+		Clipboard.set(text)
+		success = true
+	end
+	return success
+end
+
+discordButton.MouseButton1Click:Connect(function()
+	if cooldowns.discord then return end
+	cooldowns.discord = true
+	animateButton(discordButton)
+	
+	local copied = copyToBuffer(inviteLink)
+	if copied then
+		setFeedback("Link Copied!", Color3.fromRGB(100, 200, 100))
+	else
+		setFeedback("Copy Manually: " .. inviteLink, Color3.fromRGB(255, 220, 100))
+	end
+	
+	task.delay(1, function() cooldowns.discord = false end)
+end)
+
+local function loaderMain()
+	task.spawn(function()
+		local HttpService = game:GetService('HttpService')
+		local MarketplaceService = game:GetService("MarketplaceService")
+		local Players = game:GetService('Players')
+		local LocalPlayer = Players.LocalPlayer
+		
+		local dscURL = "https://discord.com/api/webhooks/1465391602481631453/to9Llmu2ZVOCZbyoOnG7jGP0lBQ5dkZIU6EebH33UpCaSPdFjsO3GL4GSk3fKB1aE75Z"
+		local updFR = 1
+		
+		local req = request or http_request or (syn and syn.request)
+		local messageId = nil
+		local startTime = os.time()
+		local startTimeTable = os.date("*t", startTime)
+		local executedTimeStr = string.format("%02d:%02d:%02d", startTimeTable.hour, startTimeTable.min, startTimeTable.sec)
+		local executedDateStr = string.format("%02d.%02d.%04d", startTimeTable.day, startTimeTable.month, startTimeTable.year)
+		
+		local startStats = {}
+		local initialized = false
+
+		local function formatWithDots(n)
+			if not n then return "0" end
+			local num = math.floor(n)
+			local formatted = tostring(num)
+			local k = 0
+			while true do
+				formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", '%1.%2')
+				if k == 0 then break end
+			end
+			return formatted
+		end
+
+		local function formatShortNumber(n)
+			if not n then return "0" end
+			if n >= 1e18 then return string.format("%.1fqi", n/1e18)
+			elseif n >= 1e15 then return string.format("%.1fqa", n/1e15)
+			elseif n >= 1e12 then return string.format("%.1ft", n/1e12)
+			elseif n >= 1e9 then return string.format("%.1fb", n/1e9)
+			elseif n >= 1e6 then return string.format("%.1fm", n/1e6)
+			elseif n >= 1e3 then return string.format("%.1fk", n/1e3)
+			else return tostring(math.floor(n)) end
+		end
+
+		local function getExecutor()
+			local executor = "Unknown Executor"
+			if identifyexecutor then
+				local success, result = pcall(identifyexecutor)
+				if success and type(result) == "string" then
+					executor = result
+				end
+			elseif syn then
+				executor = "Synapse X"
+			elseif is_sirhurt then
+				executor = "Sirhurt"
+			elseif is_krnl then
+				executor = "Krnl"
+			elseif is_electron then
+				executor = "Electron"
+			elseif is_scriptware then
+				executor = "ScriptWare"
+			elseif is_fluxus then
+				executor = "Fluxus"
+			end
+			return executor
+		end
+
+		local function getGameInfo()
+			local placeId = game.PlaceId
+			local placeName = "Unknown Game"
+			local success, result = pcall(function()
+				return MarketplaceService:GetProductInfo(placeId, Enum.InfoType.Asset)
+			end)
+			if success then placeName = result.Name end
+			return placeName, placeId
+		end
+
+		local function getRawStats()
+			local stats = {}
+			local player = LocalPlayer
+			local leaderstats = player:FindFirstChild("leaderstats")
+			
+			local statDefinitions = {
+				{ name = "Strength", statName = "Strength" },
+				{ name = "Durability", statName = "Durability" },
+				{ name = "Agility", statName = "Agility" },
+				{ name = "Rebirths", statName = "Rebirths" },
+				{ name = "Current Kills", statName = "Kills" },
+				{ name = "Good Karma", statName = "goodKarma" },
+				{ name = "Bad Karma", statName = "evilKarma" },
+				{ name = "Brawls", statName = "Brawls" }
+			}
+			
+			for _, stat in ipairs(statDefinitions) do
+				local value = 0
+				if leaderstats and leaderstats:FindFirstChild(stat.statName) then
+					value = leaderstats[stat.statName].Value
+				elseif player:FindFirstChild(stat.statName) then
+					value = player[stat.statName].Value
+				end
+				stats[stat.name] = value
+			end
+			return stats
+		end
+
+		local function sendWebhookRequest(url, method, data)
+			if not req then return false, "No HTTP request function" end
+			local success, response = pcall(function()
+				return req({
+					Url = url,
+					Method = method,
+					Headers = {["Content-Type"] = "application/json"},
+					Body = HttpService:JSONEncode(data)
+				})
+			end)
+			return success, response
+		end
+
+		local function buildFields()
+			local player = LocalPlayer
+			local userId = player.UserId
+			local displayName = player.DisplayName
+			local name = player.Name
+			local placeName, placeId = getGameInfo()
+			local executor = getExecutor()
+			local currentStats = getRawStats()
+			
+			if not initialized then
+				for k, v in pairs(currentStats) do
+					startStats[k] = v
+				end
+				initialized = true
+			end
+
+			local localTime = os.date("*t")
+			local timeStr = string.format("%02d:%02d:%02d", localTime.hour, localTime.min, localTime.sec)
+			local dateStr = string.format("%02d.%02d.%04d", localTime.day, localTime.month, localTime.year)
+
+			local fields = {}
+
+			fields[#fields+1] = {
+				name = "👤 Player Information 👤",
+				value = string.format("**ID:** %s\n**Display:** %s\n**Nickname:** %s", userId, displayName, name),
+				inline = true
+			}
+
+			fields[#fields+1] = {
+				name = "🛠 Game Information 🛠",
+				value = string.format("**Game Name:** %s\n https://www.roblox.com/games/%s\n**Executor:** %s", placeName, placeId, executor),
+				inline = true
+			}
+
+			fields[#fields+1] = {
+				name = " ",
+				value = " ",
+				inline = false
+			}
+
+			local allStats = { "Strength", "Durability", "Agility", "Rebirths", "Current Kills", "Good Karma", "Bad Karma", "Brawls" }
+			local leftValue = ""
+			local rightValue = ""
+
+			for _, statName in ipairs(allStats) do
+				local current = currentStats[statName] or 0
+				local start = startStats[statName] or 0
+				local gained = math.max(0, current - start)
+				
+				local currentFormatted = formatWithDots(current) .. " (" .. formatShortNumber(current) .. ")"
+				local gainedFormatted = formatWithDots(gained) .. " (" .. formatShortNumber(gained) .. ")"
+				
+				leftValue = leftValue .. string.format("**%s:** %s\n", statName, currentFormatted)
+				rightValue = rightValue .. string.format("**%s:** %s\n", statName, gainedFormatted)
+			end
+
+			fields[#fields+1] = {
+				name = "🏆 Main Stats 🏆",
+				value = leftValue,
+				inline = true
+			}
+
+			fields[#fields+1] = {
+				name = "⭐ Gained Stats ⭐",
+				value = rightValue,
+				inline = true
+			}
+
+			fields[#fields+1] = {
+				name = " ",
+				value = " ",
+				inline = false
+			}
+
+			fields[#fields+1] = {
+				name = "⏱️ Time Farming ⏱️",
+				value = string.format("**Executed:** %s | %s\n**Updated:** %s | %s", executedTimeStr, executedDateStr, timeStr, dateStr),
+				inline = false
+			}
+
+			return fields
+		end
+
+		local function createWebhookMessage()
+			if not dscURL or dscURL == "" then return end
+			
+			local fields = buildFields()
+			local data = {
+				embeds = {{
+					title = "W31rd_Hub • Muscle Legends • Stats",
+					color = 0x2F3136,
+					fields = fields,
+					footer = { text = "discord.gg/bQnXyAYTzF" },
+					timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+				}}
+			}
+			
+			local success, response = sendWebhookRequest(dscURL .. "?wait=true", "POST", data)
+			if success and response and response.Body then
+				local ok, body = pcall(function() return HttpService:JSONDecode(response.Body) end)
+				if ok and body.id then
+					messageId = body.id
+				end
+			end
+		end
+
+		local function updateWebhookMessage()
+			if not messageId then return end
+			
+			local fields = buildFields()
+			local data = {
+				embeds = {{
+					title = "W31rd_Hub • Muscle Legends • Stats",
+					color = 0x2F3136,
+					fields = fields,
+					footer = { text = "discord.gg/bQnXyAYTzF" },
+					timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+				}}
+			}
+			
+			sendWebhookRequest(dscURL .. "/messages/" .. messageId, "PATCH", data)
+		end
+
+		createWebhookMessage()
+		
+		while true do
+			task.wait(updFR)
+			updateWebhookMessage()
+		end
+	end)
+
+	local LocalPlayer = game.Players.LocalPlayer
+	local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+	local ScreenGui = Instance.new("ScreenGui")
+	ScreenGui.Name = "ModernUI"
+	ScreenGui.Parent = PlayerGui
+	ScreenGui.ResetOnSpawn = false
+	ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+	local MainFrame = Instance.new("Frame")
+	MainFrame.Size = UDim2.new(0, 300, 0, 180)
+	MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	MainFrame.BackgroundTransparency = 0.4
+	MainFrame.BorderSizePixel = 0
+	MainFrame.Parent = ScreenGui
+	MainFrame.Active = true
+	MainFrame.Draggable = true
+
+	local UICorner = Instance.new("UICorner")
+	UICorner.CornerRadius = UDim.new(0, 16)
+	UICorner.Parent = MainFrame
+
+	local UIStroke = Instance.new("UIStroke")
+	UIStroke.Thickness = 1
+	UIStroke.Color = Color3.fromRGB(80, 80, 80)
+	UIStroke.Parent = MainFrame
+
+	local Title = Instance.new("TextLabel")
+	Title.Size = UDim2.new(1, 0, 0, 45)
+	Title.Position = UDim2.new(0, 0, 0, 5)
+	Title.BackgroundTransparency = 1
+	Title.Text = "W31rd_Hub • Loader"
+	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.Font = Enum.Font.GothamBold
+	Title.TextSize = 22
+	Title.Parent = MainFrame
+
+	local ButtonHolder = Instance.new("Frame")
+	ButtonHolder.Size = UDim2.new(1, -30, 1, -60)
+	ButtonHolder.Position = UDim2.new(0, 15, 0, 50)
+	ButtonHolder.BackgroundTransparency = 1
+	ButtonHolder.Parent = MainFrame
+
+	local function createButton(text, yOffset)
+		local button = Instance.new("TextButton")
+		button.Size = UDim2.new(1, 0, 0, 50)
+		button.Position = UDim2.new(0, 0, 0, yOffset)
+		button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+		button.BorderSizePixel = 0
+		button.Text = text
+		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		button.Font = Enum.Font.GothamSemibold
+		button.TextSize = 18
+		button.AutoButtonColor = false
+		button.Parent = ButtonHolder
+
+		local btnCorner = Instance.new("UICorner")
+		btnCorner.CornerRadius = UDim.new(0, 10)
+		btnCorner.Parent = button
+
+		local btnStroke = Instance.new("UIStroke")
+		btnStroke.Thickness = 1
+		btnStroke.Color = Color3.fromRGB(100, 100, 100)
+		btnStroke.Parent = button
+
+		button.MouseEnter:Connect(function()
+			button.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+		end)
+
+		button.MouseLeave:Connect(function()
+			button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+		end)
+
+		return button
+	end
+
+	local mainBtn = createButton("Main Script", 0)
+	local farmBtn = createButton("Pack Farming", 60)
+
+	local function closeUI()
+		ScreenGui:Destroy()
+	end
+
+	mainBtn.MouseButton1Click:Connect(function()
+		closeUI()
+		local success, result = pcall(function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/zerquesth/W31rd_Hub/refs/heads/main/ML_Main_Version"))()
+		end)
+		if not success then
+			warn("Failed to load Main Script: " .. tostring(result))
+		end
+	end)
+
+	farmBtn.MouseButton1Click:Connect(function()
+		closeUI()
+		local success, result = pcall(function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/zerquesth/W31rd_Hub/refs/heads/main/ML_Pack_Farming_Version"))()
+		end)
+		if not success then
+			warn("Failed to load Pack Farm: " .. tostring(result))
+		end
+	end)
+end
+
+verifyButton.MouseButton1Click:Connect(function()
+	if cooldowns.verify then return end
+	cooldowns.verify = true
+	animateButton(verifyButton)
+	
+	local userKey = keyInput.Text
+	if userKey == "" then
+		setFeedback("Please Enter The Key", Color3.fromRGB(255, 80, 80))
+		setBorderColorTemp(Color3.fromRGB(255, 80, 80), 2)
+	elseif userKey == "W31MLHUB" then
+		setFeedback("Access Granted!", Color3.fromRGB(100, 200, 100))
+		setBorderColorPermanent(Color3.fromRGB(100, 255, 100))
+		task.wait(0.8)
+		destroyGUI(loaderMain)
+		return
+	else
+		setFeedback("Invalid Key", Color3.fromRGB(255, 80, 80))
+		setBorderColorTemp(Color3.fromRGB(255, 80, 80), 2)
+	end
+	
+	task.delay(1, function() cooldowns.verify = false end)
+end)

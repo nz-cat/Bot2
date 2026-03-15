@@ -1,0 +1,1 @@
+print("dcs.gg/xhider")

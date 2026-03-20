@@ -1,0 +1,1528 @@
+local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
+
+local Window = redzlib:MakeWindow({
+    Title = "NEJI Hub",
+    SubTitle = "Cộng Đồng Việt Nam",
+    SaveFolder = "Cdvn.lua"
+})
+
+Window:AddMinimizeButton({
+    Button = { Image = "rbxassetid://99719330004856", BackgroundTransparency = 0 },
+    Corner = { CornerRadius = UDim.new(0,5) },
+})
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
+local Lighting = game:GetService("Lighting")
+local Camera = Workspace.CurrentCamera
+local lp = Players.LocalPlayer
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+-- TAB
+local TabDiscord = Window:MakeTab({"Tab InFo", "info"})
+local TabFarmLevel = Window:MakeTab({"Tab Farm Npc", "axe"})
+local TabFarmBoss = Window:MakeTab({"Tab Farm Boss", "sword"})
+local TabPvP = Window:MakeTab({"Tab PvP", "target"})
+local TabMoney = Window:MakeTab({"Tab Treo Tiền", "coins"})
+local TabSettings = Window:MakeTab({"Tab Setting", "settings"})
+local TabFixLag = Window:MakeTab({"Tab Fix Lag", "wifi"})
+
+-- BUTTON
+TabDiscord:AddDiscordInvite({
+    Name = "TikTok - NEJI",
+    Description = "Flow Me!!!",
+    Logo = "rbxassetid://99719330004856",
+    Invite = "@tiktokacckhoe1",
+})
+
+-- GLOBAL VARIABLES
+local currentTarget = nil
+local freezeOnNPCKill = false
+local lastSafeCFrame = nil
+
+-- Global Settings
+_G.CityFarmEnabled = false
+_G.AutoHealEnabled = true
+_G.LockNPC2Enabled = false
+_G.AutoBuyBandageEnabled = true
+_G.FollowDistance = 8
+_G.MinBandageCount = 50
+_G.BuyQuantity = 99
+_G.LootDistance = 500
+_G.AutoLootEnabled = true
+_G.AntiAFKEnabled = true
+_G.AutoEquipSlot1Enabled = false
+_G.CityFarmMode = 1  -- 1: Xoay Quanh, 2: Trên Đầu, 3: Dưới Chân
+_G.OverHeadHeight = 3.5
+_G.UnderFeetDepth = 3.0
+
+-- Circle variables (cho chế độ xoay vòng)
+local circleAngle = 0
+local circleSpeed = 1.8       -- radian/giây - chỉnh ở slider
+local lastCircleUpdate = tick()
+
+-- Remote mua băng gạc
+local buyItemRemote = nil
+pcall(function()
+    buyItemRemote = ReplicatedStorage.KnitPackages._Index["sleitnick_knit@1.7.0"].knit.Services.ShopService.RE.buyItem
+end)
+local BANDAGE_NAME = "b\196\131ng g\225\186\161c"   -- "băng gạc" encoded
+
+-- PvP Variables
+local Aimbot = false
+local AimbotTarget = nil
+local AimbotNearest = false
+local Spin = false
+local SpinSpeed = 2500
+local SpeedBoost = false
+local WalkSpeed = 32
+local speedVelConnection = nil
+local ESP = false
+local ESPObjects = {}
+local AutoBandagePvP = false
+local AutoClick = false
+local ClickCPS = 15
+local lastClickTime = 0
+
+-- Fix Lag
+local currentLagFixLevel = 0
+local whiteScreenEnabled = false
+local whiteScreenGui = nil
+
+-- Money Farm
+local moneyStat = nil
+local afkStartTime = 0
+local lastMoney = 0
+local moneyPerSec = 0
+local frames = 0
+local lastFPS = tick()
+local currentFPS = 0
+local SelectedTeleportPos = "Vị Trí 1"
+
+-- Tween
+local TweenConnection = nil
+local MOVE_SPEED = 60
+local STOP_DISTANCE = 0.5
+local TeleportPositions = {
+    ["Vị Trí 1"] = Vector3.new(1677.701, 19.145, -391.328),
+    ["Vị Trí 2"] = Vector3.new(1723.688, 19.145, -389.441),
+    ["Vị Trí 3"] = Vector3.new(1723.692, 19.145, -453.153)
+}
+
+-- NPC2 Lock
+local lockedNPC2Pos = nil
+local lockedNPC = nil
+local waitTick = 0
+
+-- BOSS FARM VARIABLES
+local npc2Mode = false
+local bossAutoHeal = true
+local bossAutoBuyBandage = true
+local bossLockCamera = false
+local bossLookAtNPC2 = true
+local bossFarmMode = 2
+local bossTeleportDelay = 0.009
+local bossLastTeleportTime = 0
+local bossCurrentTeleportIndex = 1
+local bossFarmStartTime = nil
+local bossLastClickTime = 0
+local bossClickCooldown = 0.2
+
+-- Teleport locations
+local teleportLocationsMode1 = {
+    Vector3.new(-2772.832, 238.635, -1756.588),
+    Vector3.new(-2791.809, 238.635, -1778.617),
+    Vector3.new(-2805.974, 238.635, -1756.595),
+}
+
+local teleportLocationsMode2 = {
+    Vector3.new(-2790.041, 238.635, -1741.816),
+    Vector3.new(-2793.116, 238.635, -1783.604),
+}
+
+-- ESP và Glow cho boss
+local bossESPBeam = nil
+local bossGlowParts = {}
+
+-- UTILITY FUNCTIONS
+local function GetPlayers()
+    local t = {}
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= lp then
+            table.insert(t, p.Name)
+        end
+    end
+    return t
+end
+
+local function GetNearestPlayer()
+    local myChar = lp.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
+
+    local myHRP = myChar.HumanoidRootPart
+    local nearest, shortest = nil, math.huge
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local dist = (p.Character.HumanoidRootPart.Position - myHRP.Position).Magnitude
+                if dist < shortest then
+                    shortest = dist
+                    nearest = p
+                end
+            end
+        end
+    end
+    return nearest
+end
+
+local function unlockNPC(npc)
+    if not npc then return end
+    local hum = npc:FindFirstChild("Humanoid")
+    if hum then hum.AutoRotate = true hum.WalkSpeed = 16 hum.JumpPower = 50 end
+end
+
+local function lockNPC(npc)
+    if not npc then return end
+    local hum = npc:FindFirstChild("Humanoid")
+    local hrp = npc:FindFirstChild("HumanoidRootPart")
+    if not hum or not hrp then return end
+    hum.AutoRotate = false hum.WalkSpeed = 0 hum.JumpPower = 0
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+end
+
+local function getClosestCityNPC(hrp)
+    local closest, dist = nil, math.huge
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v.Name == "CityNPC" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            local d = (v.HumanoidRootPart.Position - hrp.Position).Magnitude
+            if d < dist then dist = d closest = v end
+        end
+    end
+    return closest
+end
+
+-- BOSS FUNCTIONS
+local function getNPC2()
+    for _, v in ipairs(workspace:GetDescendants()) do
+        if v:IsA("Model") and v.Name:lower():find("npc2") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+            return v
+        end
+    end
+end
+
+local function getTeleportLocations()
+    if bossFarmMode == 2 then
+        return teleportLocationsMode1
+    else
+        return teleportLocationsMode2
+    end
+end
+
+local function createBossESP(root)
+    if bossESPBeam then bossESPBeam:Destroy() end
+    local char = lp.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local beam = Instance.new("Beam")
+    beam.FaceCamera = true
+    beam.Color = ColorSequence.new(Color3.fromRGB(255, 50, 50))
+    beam.Width0 = 0.3
+    beam.Width1 = 0.3
+    beam.Transparency = NumberSequence.new(0.6)
+    local a0 = Instance.new("Attachment", hrp)
+    local a1 = Instance.new("Attachment", root)
+    beam.Attachment0 = a0
+    beam.Attachment1 = a1
+    beam.Parent = Workspace
+    bossESPBeam = beam
+end
+
+local function removeBossESP()
+    if bossESPBeam then 
+        bossESPBeam:Destroy() 
+        bossESPBeam = nil 
+    end
+end
+
+local function clearBossGlow()
+    for _, v in pairs(bossGlowParts) do
+        if v and v.Parent then v:Destroy() end
+    end
+    bossGlowParts = {}
+end
+
+local function addBossGlow(tool)
+    clearBossGlow()
+    for _, p in pairs(tool:GetDescendants()) do
+        if p:IsA("BasePart") then
+            local pe = Instance.new("ParticleEmitter", p)
+            pe.Color = ColorSequence.new(Color3.fromRGB(0, 255, 100))
+            pe.LightEmission = 0.8
+            pe.Rate = 35
+            pe.Speed = NumberRange.new(0)
+            pe.Lifetime = NumberRange.new(0.4)
+            table.insert(bossGlowParts, pe)
+        end
+    end
+end
+
+local function bossTeleportToRandomLocation(npc)
+    local char = lp.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local currentTime = tick()
+    if currentTime - bossLastTeleportTime >= bossTeleportDelay then
+        local teleportLocations = getTeleportLocations()
+        local randomIndex = math.random(1, #teleportLocations)
+        bossCurrentTeleportIndex = randomIndex
+        local location = teleportLocations[randomIndex]
+        
+        hrp.CFrame = CFrame.new(location)
+        
+        if npc and bossLookAtNPC2 then
+            local root = npc:FindFirstChild("HumanoidRootPart")
+            if root then
+                local pos = hrp.Position
+                local targetPos = Vector3.new(
+                    root.Position.X,
+                    pos.Y,
+                    root.Position.Z
+                )
+                hrp.CFrame = CFrame.lookAt(pos, targetPos)
+            end
+        end
+        
+        bossLastTeleportTime = currentTime
+        return randomIndex, location
+    end
+    return bossCurrentTeleportIndex, getTeleportLocations()[bossCurrentTeleportIndex]
+end
+
+local function bossAutoAttack()
+    if not npc2Mode then return end
+    
+    local char = lp.Character
+    if not char then return end
+    
+    local currentTime = tick()
+    if currentTime - bossLastClickTime >= bossClickCooldown then
+        local tool = char:FindFirstChildOfClass("Tool")
+        if tool then
+            tool:Activate()
+            bossLastClickTime = currentTime
+        end
+    end
+end
+
+-- ESP
+local function CreateESP(p)
+    if p == lp then return end
+    local t = Drawing.new("Text")
+    t.Size = 14
+    t.Center = true
+    t.Outline = true
+    t.Color = Color3.new(1,1,1)
+    ESPObjects[p] = t
+end
+
+RunService.RenderStepped:Connect(function()
+    for p,t in pairs(ESPObjects) do
+        local c = p.Character
+        if ESP and c and c:FindFirstChild("Head") then
+            local pos,on = Camera:WorldToViewportPoint(c.Head.Position)
+            t.Position = Vector2.new(pos.X,pos.Y-20)
+            t.Text = p.Name
+            t.Visible = on
+        else
+            t.Visible = false
+        end
+    end
+end)
+
+local lastHealth = 0
+
+RunService.Heartbeat:Connect(function(dt)
+    if not _G.CityFarmEnabled then return end
+    
+    local char = lp.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+    
+    -- ANTI DAMAGE SERVER
+    if lastHealth == 0 then
+        lastHealth = hum.Health
+    end
+    
+    if hum.Health < lastHealth then
+        hum.Health = lastHealth
+    else
+        lastHealth = hum.Health
+    end
+    
+    -- xoá knockback
+    hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
+    hrp.AssemblyAngularVelocity = Vector3.zero
+    
+    hum.AutoRotate = false
+    hum:Move(Vector3.zero, true)
+    hum.PlatformStand = false
+    
+   
+    -- FIND TARGET
+    if not currentTarget or not currentTarget.Parent
+       or not currentTarget:FindFirstChild("Humanoid")
+       or currentTarget.Humanoid.Health <= 0 then
+        
+        currentTarget = nil
+        
+        if _G.CityFarmMode == 3 and lastSafeCFrame then
+            hrp.Anchored = true
+            hrp.CFrame = lastSafeCFrame
+            
+            waitTick += dt
+            if waitTick < 0.6 then return end
+            
+            waitTick = 0
+            hrp.Anchored = false
+        end
+        
+        currentTarget = getClosestCityNPC(hrp)
+        if not currentTarget then return end
+        
+        circleAngle = math.random() * math.pi * 2
+        lastCircleUpdate = tick()
+    end
+    
+    local npcHRP = currentTarget:FindFirstChild("HumanoidRootPart")
+    local npcHum = currentTarget:FindFirstChild("Humanoid")
+    
+    if not npcHRP or not npcHum then return end
+    
+    
+    -- AI BREAK (NPC KHÔNG TARGET)
+    npcHum:Move(Vector3.zero, false)
+    
+    local target = currentTarget:FindFirstChild("Target")
+    if target and target.Value == char then
+        target.Value = nil
+    end
+    
+    npcHum:MoveTo(npcHRP.Position)
+    
+    
+    -- MODE 1: XOAY VÒNG
+    if _G.CityFarmMode == 1 then
+        
+        local now = tick()
+        local delta = now - lastCircleUpdate
+        lastCircleUpdate = now
+        
+        circleAngle = circleAngle + circleSpeed * delta
+        
+        local radius = _G.FollowDistance or 8
+        
+        local offset = Vector3.new(
+            math.cos(circleAngle) * radius,
+            0,
+            math.sin(circleAngle) * radius
+        )
+        
+        local targetPos = npcHRP.Position + offset
+        local lookAt = npcHRP.Position + Vector3.new(0,1.4,0)
+        
+        hrp.CFrame = CFrame.new(targetPos, lookAt)
+        
+        hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    
+    
+    -- MODE 2: TRÊN ĐẦU NPC
+    elseif _G.CityFarmMode == 2 then
+        
+        local pos = npcHRP.Position + Vector3.new(0, _G.OverHeadHeight or 6, 0)
+        hrp.CFrame = CFrame.lookAt(pos, npcHRP.Position)
+    
+    
+    -- MODE 3: DƯỚI CHÂN NPC
+    elseif _G.CityFarmMode == 3 then
+        
+        local pos = npcHRP.Position - Vector3.new(0, _G.UnderFeetDepth or 6, 0)
+        local cf = CFrame.lookAt(pos, npcHRP.Position)
+        
+        lastSafeCFrame = cf
+        hrp.CFrame = cf
+        
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end
+    
+    
+    -- AUTO ATTACK
+    if (npcHRP.Position - hrp.Position).Magnitude <= 15 then
+        
+        for _,tool in ipairs(char:GetChildren()) do
+            
+            if tool:IsA("Tool") then
+                pcall(function()
+                    tool:Activate()
+                end)
+            end
+            
+        end
+    end
+    
+end)
+
+-- PVP AIMBOT LOGIC
+local AimConn, AimClickConn
+local AimNearestConn, AimNearestClickConn
+
+local function StopAimbot()
+    if AimConn then AimConn:Disconnect() AimConn = nil end
+    if AimClickConn then AimClickConn:Disconnect() AimClickConn = nil end
+end
+
+local function StartAimbot(char)
+    local myChar = lp.Character
+    if not myChar or not char then return end
+    
+    local hrp = myChar:FindFirstChild("HumanoidRootPart")
+    local thrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp or not thrp then return end
+    
+    AimConn = RunService.RenderStepped:Connect(function()
+        if not Aimbot then return end
+        local dir = thrp.Position - hrp.Position
+        local look = Vector3.new(dir.X, 0, dir.Z)
+        if look.Magnitude > 0.1 then
+            hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + look)
+        end
+    end)
+    
+    AimClickConn = RunService.Heartbeat:Connect(function()
+        if Aimbot then
+            VirtualUser:Button1Down(Vector2.new())
+            VirtualUser:Button1Up(Vector2.new())
+        end
+    end)
+end
+
+local function StopAimbotNearest()
+    if AimNearestConn then AimNearestConn:Disconnect() AimNearestConn = nil end
+    if AimNearestClickConn then AimNearestClickConn:Disconnect() AimNearestClickConn = nil end
+end
+
+local function StartAimbotNearest()
+    StopAimbotNearest()
+    
+    AimNearestConn = RunService.RenderStepped:Connect(function()
+        if not AimbotNearest then return end
+        local target = GetNearestPlayer()
+        if not target or not target.Character then return end
+        
+        local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+        local thrp = target.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp or not thrp then return end
+        
+        local dir = thrp.Position - hrp.Position
+        local look = Vector3.new(dir.X, 0, dir.Z)
+        if look.Magnitude > 0.1 then
+            hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + look)
+        end
+    end)
+    
+    AimNearestClickConn = RunService.Heartbeat:Connect(function()
+        if AimbotNearest then
+            VirtualUser:Button1Down(Vector2.new())
+            VirtualUser:Button1Up(Vector2.new())
+        end
+    end)
+end
+
+-- AUTO CLICK (CPS tùy chỉnh)
+RunService.Heartbeat:Connect(function()
+    if not AutoClick then return end
+    
+    if tick() - lastClickTime >= (1 / ClickCPS) then
+        VirtualUser:Button1Down(Vector2.new())
+        VirtualUser:Button1Up(Vector2.new())
+        lastClickTime = tick()
+    end
+end)
+
+-- SPIN & SPEED
+RunService.RenderStepped:Connect(function(dt)
+    if Spin and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        lp.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(SpinSpeed * dt), 0)
+    end
+end)
+
+-- AUTO HEAL PVP - ULTRA FAST
+local FAST_HEAL_DELAY     = 0.07
+local FAST_SWAP_DELAY     = 0.02
+local FAST_HEAL_COOLDOWN  = 0.55
+local HEAL_PERCENT        = 0.55
+
+local lastHealTick = 0
+
+task.spawn(function()
+    while true do
+        task.wait(0.035)
+
+        local char = lp.Character
+        if not char then continue end
+
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+        if not hum or hum.Health <= 0 or hum.Health >= hum.MaxHealth then continue end
+
+        if hum.Health > hum.MaxHealth * HEAL_PERCENT then continue end
+        if tick() - lastHealTick < FAST_HEAL_COOLDOWN then continue end
+
+        local backpack = lp.Backpack
+        if not backpack then continue end
+
+        local bandage = backpack:FindFirstChild(BANDAGE_NAME)
+        if not bandage or not bandage:IsA("Tool") then continue end
+
+        local oldTool = char:FindFirstChildWhichIsA("Tool")
+
+        lastHealTick = tick()
+
+        task.spawn(function()
+            pcall(function()
+                hum:EquipTool(bandage)
+                task.wait(FAST_HEAL_DELAY)
+                bandage:Activate()
+                task.wait(FAST_SWAP_DELAY)
+                
+                if oldTool and oldTool.Parent == backpack then
+                    hum:EquipTool(oldTool)
+                else
+                    hum:UnequipTools()
+                end
+            end)
+        end)
+    end
+end)
+
+-- AUTO HEAL (FARM)
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if _G.AutoHealEnabled and lp.Character then
+            local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health <= hum.MaxHealth * 0.5 then
+                local backpack = lp.Backpack
+                if backpack then
+                    local bandage = backpack:FindFirstChild(BANDAGE_NAME)
+                    if bandage and bandage:IsA("Tool") then
+                        local prevTool = lp.Character:FindFirstChildOfClass("Tool")
+                        hum:EquipTool(bandage)
+                        bandage:Activate()
+                        task.wait(2.4)
+                        if prevTool and prevTool.Parent == backpack then hum:EquipTool(prevTool) end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- AUTO BUY BANDAGE
+task.spawn(function()
+    while task.wait(3) do
+        if not _G.AutoBuyBandageEnabled or not _G.CityFarmEnabled or not buyItemRemote then continue end
+        
+        local backpack = lp.Backpack
+        if not backpack then continue end
+        
+        local bandageCount = 0
+        for _, tool in backpack:GetChildren() do
+            if tool:IsA("Tool") and tool.Name == BANDAGE_NAME then
+                bandageCount += 1
+            end
+        end
+        local heldTool = lp.Character and lp.Character:FindFirstChildOfClass("Tool")
+        if heldTool and heldTool.Name == BANDAGE_NAME then
+            bandageCount += 1
+        end
+        
+        if bandageCount < _G.MinBandageCount then
+            pcall(function() buyItemRemote:FireServer(BANDAGE_NAME, _G.BuyQuantity) end)
+            task.wait(0.4)
+            pcall(function() buyItemRemote:FireServer(BANDAGE_NAME, _G.BuyQuantity) end)
+        end
+    end
+end)
+
+-- AUTO LOOT
+local lootedParts = {}
+local LootCooldown = 1
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if not _G.AutoLootEnabled then
+            table.clear(lootedParts)
+            continue
+        end
+        
+        local char = lp.Character
+        if not char then continue end
+        
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then continue end
+        
+        local overlapParams = OverlapParams.new()
+        overlapParams.FilterType = Enum.RaycastFilterType.Blacklist
+        overlapParams.FilterDescendantsInstances = {char}
+        
+        local lootWhitelist = {
+            "coin","gold","money","cash","gem","diamond",
+            "chest","treasure","ruong","rương",
+            "drop","loot","item","box","crate"
+        }
+        
+        local now = os.clock()
+        
+        local parts = Workspace:GetPartBoundsInRadius(
+            hrp.Position,
+            _G.LootDistance,
+            overlapParams
+        )
+        
+        for _, part in ipairs(parts) do
+            if not part:IsA("BasePart") then continue end
+            if not part.Parent then 
+                lootedParts[part] = nil 
+                continue 
+            end
+            
+            if lootedParts[part] and now - lootedParts[part] < LootCooldown then
+                continue
+            end
+            
+            local name = part.Name:lower()
+            local valid = false
+            for _, k in ipairs(lootWhitelist) do
+                if name:find(k, 1, true) then
+                    valid = true
+                    break
+                end
+            end
+            if not valid then continue end
+            
+            local prompt = part:FindFirstChildWhichIsA("ProximityPrompt", true)
+            if prompt and prompt.Enabled then
+                fireproximityprompt(prompt)
+                lootedParts[part] = now
+                continue
+            end
+            
+            if part:FindFirstChildWhichIsA("TouchTransmitter") then
+                firetouchinterest(hrp, part, 0)
+                firetouchinterest(hrp, part, 1)
+                lootedParts[part] = now
+                continue
+            end
+            
+            local click = part:FindFirstChildWhichIsA("ClickDetector", true)
+            if click then
+                fireclickdetector(click)
+                lootedParts[part] = now
+            end
+        end
+    end
+end)
+
+-- NPC2 LOCK
+RunService.Heartbeat:Connect(function()
+    if not _G.LockNPC2Enabled then
+        lockedNPC2Pos = nil
+        return
+    end
+    
+    local npc = getNPC2()
+    if not npc then
+        lockedNPC2Pos = nil
+        return
+    end
+    
+    local hrp = npc:FindFirstChild("HumanoidRootPart")
+    local hum = npc:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+    
+    if not lockedNPC2Pos then
+        lockedNPC2Pos = hrp.CFrame
+    end
+    
+    hrp.Anchored = true
+    hrp.CFrame = lockedNPC2Pos
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+    hum.AutoRotate = false
+end)
+
+-- MONEY FARM & ANTI AFK
+task.spawn(function()
+    repeat
+        local leaderstats = lp:FindFirstChild("leaderstats")
+        if leaderstats then
+            moneyStat = leaderstats:FindFirstChild("VND")
+            if moneyStat then break end
+            
+            local highest = -math.huge
+            local backup = nil
+            for _, stat in leaderstats:GetChildren() do
+                if stat:IsA("IntValue") or stat:IsA("NumberValue") then
+                    if stat.Value > highest then
+                        highest = stat.Value
+                        backup = stat
+                    end
+                end
+            end
+            if backup then moneyStat = backup break end
+        end
+        task.wait(1)
+    until moneyStat
+end)
+
+RunService.RenderStepped:Connect(function()
+    frames += 1
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        if not moneyStat then continue end
+
+        local money = moneyStat.Value
+        moneyPerSec = money - lastMoney
+        lastMoney = money
+
+        if tick() - lastFPS >= 1 then
+            currentFPS = frames
+            frames = 0
+            lastFPS = tick()
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if not _G.AntiAFKEnabled then
+            task.wait(1)
+            continue
+        end
+        
+        afkStartTime = tick()
+        
+        local waitTime = math.random(280, 320)
+        task.wait(waitTime)
+        
+        if not _G.AntiAFKEnabled then continue end
+        
+        Camera.CFrame *= CFrame.Angles(0, math.rad(math.random(3, 6)), 0)
+        
+        VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame)
+        task.wait(math.random(0.4, 0.8))
+        VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame)
+    end
+end)
+
+
+-- AUTO EQUIP SLOT 1
+task.spawn(function()
+    while task.wait(1) do
+        if not _G.AutoEquipSlot1Enabled then continue end
+
+        local char = lp.Character  
+        if not char then continue end  
+        local hum = char:FindFirstChild("Humanoid")  
+        if not hum then continue end  
+          
+        local backpack = lp:FindFirstChild("Backpack")  
+        if not backpack or #backpack:GetChildren() == 0 then continue end  
+          
+        local currentTool = char:FindFirstChildOfClass("Tool")  
+          
+        if not currentTool then  
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.One, false, game)  
+            task.wait(0.05)  
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.One, false, game)  
+        end  
+    end
+end)
+
+-- TWEEN SYSTEM
+local function StopTween()
+    if TweenConnection then
+        TweenConnection:Disconnect()
+        TweenConnection = nil
+    end
+end
+
+local function SmoothTweenTo(targetPos)
+    StopTween()
+
+    local character = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+    hrp.Anchored = true
+
+    TweenConnection = RunService.Heartbeat:Connect(function(dt)
+        if not hrp or not hrp.Parent then
+            StopTween()
+            return
+        end
+
+        local currentPos = hrp.Position
+        local offset = targetPos - currentPos
+        local distance = offset.Magnitude
+
+        if distance <= STOP_DISTANCE then
+            hrp.CFrame = CFrame.new(targetPos)
+            StopTween()
+            hrp.Anchored = false
+            return
+        end
+
+        local direction = offset.Unit
+        local moveStep = math.min(MOVE_SPEED * dt, distance)
+
+        hrp.CFrame = hrp.CFrame + direction * moveStep
+    end)
+end
+
+-- FIX LAG
+local function ApplyLagFix(level)
+    if level <= currentLagFixLevel then return end
+    
+    local Terrain = workspace:FindFirstChildOfClass("Terrain")
+    
+    if level >= 10 and currentLagFixLevel < 10 then
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+    end
+    
+    if level >= 30 and currentLagFixLevel < 30 then
+        for _, effect in ipairs(Lighting:GetChildren()) do
+            if effect:IsA("BlurEffect") or effect:IsA("DepthOfFieldEffect") then
+                effect.Enabled = false
+            end
+        end
+    end
+    
+    if level >= 50 and currentLagFixLevel < 50 then
+        for _, part in ipairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Material = Enum.Material.SmoothPlastic
+            end
+        end
+    end
+    
+    if level >= 70 and currentLagFixLevel < 70 then
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Decal") or obj:IsA("Texture") then
+                obj:Destroy()
+            elseif obj:IsA("MeshPart") then
+                obj.TextureID = ""
+            end
+        end
+    end
+    
+    currentLagFixLevel = level
+end
+
+-- ANTI AFK GLOBAL
+lp.Idled:Connect(function()
+    if _G.AntiAFKEnabled then
+        VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame)
+    end
+end)
+
+-- UI - FARM LEVEL TAB
+TabFarmLevel:AddToggle({
+    Name = "Auto Farm Npc",
+    Callback = function(v)
+        _G.CityFarmEnabled = v
+        if not v then 
+            Camera.CameraType = Enum.CameraType.Custom 
+            if lockedNPC then unlockNPC(lockedNPC) lockedNPC = nil end
+        end
+    end
+})
+
+TabFarmLevel:AddSlider({
+    Name = "Khoảng Cách",
+    Min = 1,
+    Max = 15,
+    Default = 8,
+    Callback = function(v)
+        _G.FollowDistance = v
+    end
+})
+
+TabFarmLevel:AddSlider({
+    Name = "Tốc Độ Xoay Vòng",
+    Min = 0.5,
+    Max = 30,
+    Default = 1.8,
+    Decimals = 1,
+    Callback = function(v)
+        circleSpeed = v
+    end
+})
+
+TabFarmLevel:AddSlider({
+    Name = "Độ Cao Trên Đầu",
+    Min = 1,
+    Max = 10,
+    Default = 3.5,
+    Callback = function(v)
+        _G.OverHeadHeight = v
+    end
+})
+
+TabFarmLevel:AddSlider({
+    Name = "Độ Sâu Dưới Chân",
+    Min = 1,
+    Max = 20,
+    Default = 3,
+    Callback = function(v)
+        _G.UnderFeetDepth = v
+    end
+})
+
+local FarmModeDropdown = TabFarmLevel:AddDropdown({
+    Name = "Kiểu",
+    Options = {"Xoay Quanh", "Trên Đầu", "Dưới Chân"},
+    Callback = function(v)
+        if v == "Xoay Quanh" then
+            _G.CityFarmMode = 1
+        elseif v == "Trên Đầu" then
+            _G.CityFarmMode = 2
+        elseif v == "Dưới Chân" then
+            _G.CityFarmMode = 3
+        end
+    end
+})
+
+-- UI - FARM BOSS TAB
+local bossStatusLabel = TabFarmBoss:AddLabel("Trạng thái: Đang tắt")
+local bossHPLabel = TabFarmBoss:AddLabel("Boss HP: ---")
+local bossTimerLabel = TabFarmBoss:AddLabel("Thời gian: 00:00")
+local bossModeLabel = TabFarmBoss:AddLabel("Mode: 2 | Vị trí: 1")
+
+TabFarmBoss:AddToggle({
+    Name = "Bật Farm Boss",
+    Default = false,
+    Callback = function(v)
+        npc2Mode = v
+        bossFarmStartTime = v and tick() or nil
+        bossStatusLabel:Set("Trạng thái: " .. (v and "Đang farm" or "Đang tắt"))
+        
+        if not v then
+            removeBossESP()
+            clearBossGlow()
+            bossHPLabel:Set("Boss HP: ---")
+        end
+    end
+})
+
+TabFarmBoss:AddToggle({
+    Name = "Auto Heal Boss",
+    Default = true,
+    Callback = function(v)
+        bossAutoHeal = v
+    end
+})
+
+TabFarmBoss:AddToggle({
+    Name = "Auto Mua Băng Gạc",
+    Default = true,
+    Callback = function(v)
+        bossAutoBuyBandage = v
+    end
+})
+
+TabFarmBoss:AddToggle({
+    Name = "Khóa Camera",
+    Default = false,
+    Callback = function(v)
+        bossLockCamera = v
+    end
+})
+
+TabFarmBoss:AddToggle({
+    Name = "Luôn Quay Mặt Boss",
+    Default = true,
+    Callback = function(v)
+        bossLookAtNPC2 = v
+    end
+})
+
+TabFarmBoss:AddToggle({
+    Name = "Tự Động Đánh",
+    Default = true,
+    Callback = function(v)
+        bossClickCooldown = v and 0.2 or 999
+    end
+})
+
+TabFarmBoss:AddSlider({
+    Name = "Tốc Độ Teleport (ms)",
+    Min = 1,
+    Max = 50,
+    Default = 9,
+    Callback = function(v)
+        bossTeleportDelay = v / 1000
+    end
+})
+
+TabFarmBoss:AddDropdown({
+    Name = "Chọn Mode",
+    Options = {"1", "2"},
+    Default = "2",
+    Callback = function(v)
+        bossFarmMode = tonumber(v)
+        bossModeLabel:Set("Mode: " .. v .. " | Vị trí: " .. bossCurrentTeleportIndex)
+    end
+})
+
+TabFarmBoss:AddToggle({
+    Name = "Khóa Boss (Lock NPC2)",
+    Default = false,
+    Callback = function(v)
+        _G.LockNPC2Enabled = v
+    end
+})
+
+-- BOSS FARM LOOP
+task.spawn(function()
+    while task.wait(0.1) do
+        if not npc2Mode then
+            task.wait(1)
+            continue
+        end
+        
+        local char = lp.Character
+        if not char then continue end
+        
+        local hum = char:FindFirstChild("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then continue end
+        
+        -- Auto Heal Boss
+        if bossAutoHeal and hum.Health < hum.MaxHealth * 0.6 then
+            local backpack = lp.Backpack
+            if backpack then
+                local bandage = backpack:FindFirstChild(BANDAGE_NAME)
+                if bandage and bandage:IsA("Tool") then
+                    local prevTool = char:FindFirstChildOfClass("Tool")
+                    hum:EquipTool(bandage)
+                    bandage:Activate()
+                    task.wait(1.2)
+                    if prevTool and prevTool.Parent == backpack then
+                        hum:EquipTool(prevTool)
+                    end
+                end
+            end
+        end
+        
+        -- Auto Buy Bandage Boss
+        if bossAutoBuyBandage and buyItemRemote then
+            pcall(function()
+                buyItemRemote:FireServer(BANDAGE_NAME, 99)
+            end)
+        end
+        
+        -- Find NPC2
+        local npc = getNPC2()
+        
+        if npc then
+            local npcHRP = npc:FindFirstChild("HumanoidRootPart")
+            local npcHum = npc:FindFirstChild("Humanoid")
+            
+            if npcHRP and npcHum then
+                -- Update UI
+                bossHPLabel:Set(string.format("Boss HP: %d/%d", 
+                    math.max(0, math.floor(npcHum.Health)), 
+                    math.floor(npcHum.MaxHealth)))
+                
+                -- Create ESP
+                if not bossESPBeam then
+                    createBossESP(npcHRP)
+                end
+                
+                -- Add glow to weapon
+                local tool = char:FindFirstChildOfClass("Tool")
+                if tool then
+                    addBossGlow(tool)
+                else
+                    clearBossGlow()
+                end
+                
+                -- Lock camera
+                if bossLockCamera then
+                    Camera.CameraType = Enum.CameraType.Custom
+                    Camera.CameraSubject = npcHum
+                else
+                    Camera.CameraSubject = hum
+                end
+                
+                -- Teleport and look at boss
+                local locationIndex, location = bossTeleportToRandomLocation(npc)
+                bossModeLabel:Set(string.format("Mode: %d | Vị trí: %d", bossFarmMode, locationIndex))
+                
+                bossStatusLabel:Set("Trạng thái: Đang đánh boss")
+            end
+        else
+            removeBossESP()
+            clearBossGlow()
+            bossHPLabel:Set("Boss HP: Đang chờ respawn")
+            bossStatusLabel:Set("Trạng thái: Chờ boss")
+            
+            -- Still teleport while waiting
+            local locationIndex, location = bossTeleportToRandomLocation(nil)
+            bossModeLabel:Set(string.format("Mode: %d | Vị trí: %d", bossFarmMode, locationIndex))
+        end
+        
+        -- Update timer
+        if bossFarmStartTime then
+            local t = math.floor(tick() - bossFarmStartTime)
+            bossTimerLabel:Set(string.format("Thời gian: %02d:%02d", math.floor(t / 60), t % 60))
+        end
+        
+        -- Auto attack
+        bossAutoAttack()
+    end
+end)
+
+-- UI - PVP COMBAT TAB
+local function toggleSpeedCFrame(v)
+    if v then
+        if speedVelConnection then return end
+        speedVelConnection = RunService.Heartbeat:Connect(function(dt)
+            if not SpeedBoost then return end
+            local char = lp.Character
+            if not char or not char.Parent then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hrp or not hum then return end
+            if hum.MoveDirection.Magnitude > 0 then
+                local oldY = hrp.AssemblyLinearVelocity.Y
+                hrp.AssemblyLinearVelocity = Vector3.new(0, oldY, 0)
+                hrp.CFrame = hrp.CFrame + (hum.MoveDirection * (WalkSpeed * dt))
+                hrp:SetNetworkOwner(lp)
+            end
+        end)
+    else
+        if speedVelConnection then
+            speedVelConnection:Disconnect()
+            speedVelConnection = nil
+        end
+    end
+end
+
+local AimbotDropdown = TabPvP:AddDropdown({
+    Name = "Chọn Mục Tiêu",
+    Options = GetPlayers(),
+    Callback = function(v)
+        AimbotTarget = Players:FindFirstChild(v)
+    end
+})
+
+TabPvP:AddButton({
+    Name = "Làm Mới Danh Sách",
+    Callback = function()
+        AimbotDropdown:Set(GetPlayers())
+    end
+})
+
+TabPvP:AddToggle({
+    Name = "Aimbot + Attack",
+    Callback = function(v)
+        Aimbot = v
+        if v and AimbotTarget and AimbotTarget.Character then
+            StartAimbot(AimbotTarget.Character)
+        else
+            StopAimbot()
+        end
+    end
+})
+
+TabPvP:AddToggle({
+    Name = "Aimbot Nearest + Attack",
+    Callback = function(v)
+        AimbotNearest = v
+        if v then StartAimbotNearest() else StopAimbotNearest() end
+    end
+})
+
+TabPvP:AddToggle({
+    Name = "ESP Name",
+    Callback = function(v)
+        ESP = v
+        if v then
+            for _,p in ipairs(Players:GetPlayers()) do CreateESP(p) end
+            Players.PlayerAdded:Connect(CreateESP)
+        else
+            for _,t in pairs(ESPObjects) do t:Remove() end
+            ESPObjects = {}
+        end
+    end
+})
+
+TabPvP:AddToggle({
+    Name = "Auto Heal PvP",
+    Callback = function(v)
+        AutoBandagePvP = v
+    end
+})
+
+TabPvP:AddToggle({
+    Name = "Xoay",
+    Callback = function(v) Spin = v end
+})
+
+TabPvP:AddSlider({
+    Name = "Tốc Độ Xoay",
+    Min = 1000,
+    Max = 5000,
+    Default = 2500,
+    Callback = function(v) SpinSpeed = v end
+})
+
+TabPvP:AddToggle({
+    Name = "Tăng Tốc",
+    Callback = function(v)
+        SpeedBoost = v
+        toggleSpeedCFrame(v)
+    end
+})
+
+TabPvP:AddSlider({
+    Name = "Tốc Độ Chạy",
+    Min = 16,
+    Max = 100,
+    Default = 32,
+    Callback = function(v)
+        WalkSpeed = v
+    end
+})
+
+TabPvP:AddToggle({
+    Name = "Auto Click",
+    Callback = function(v)
+        AutoClick = v
+    end
+})
+
+TabPvP:AddSlider({
+    Name = "CPS (Clicks/Giây)",
+    Min = 5,
+    Max = 50,
+    Default = 15,
+    Callback = function(v)
+        ClickCPS = v
+    end
+})
+
+TabPvP:AddButton({
+    Name = "Mở Script Fly",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/HieuDepTrai-Z/BuLiemLoLi/refs/heads/main/LoliBeo.txt"))()
+    end
+})
+
+-- UI - MONEY TAB
+TabMoney:AddToggle({
+    Name = "Anti AFK Treo Tiền",
+    Default = true,
+    Callback = function(v)
+        _G.AntiAFKEnabled = v
+        if v then
+            afkStartTime = tick()
+        end
+    end
+})
+
+local TeleportDropdown = TabMoney:AddDropdown({
+    Name = "Chọn Vị Trí",
+    Options = {"Vị Trí 1", "Vị Trí 2", "Vị Trí 3"},
+    Callback = function(v)
+        SelectedTeleportPos = v
+    end
+})
+
+TabMoney:AddButton({
+    Name = "Tween Mượt Đến Vị Trí",
+    Callback = function()
+        local target = TeleportPositions[SelectedTeleportPos]
+        if target then
+            SmoothTweenTo(target + Vector3.new(0, 5, 0))
+        end
+    end
+})
+
+task.spawn(function()
+    while task.wait(1) do
+        if not moneyStat then
+            continue
+        end
+        
+        local afkTime = _G.AntiAFKEnabled and math.floor(tick() - afkStartTime) or 0
+        local state = _G.AntiAFKEnabled and "Đang Treo" or "Đã Tắt Anti AFK"
+        local moneyText = tostring(moneyStat.Value)
+        
+        local content = state .. "\nTiền: " .. moneyText .. "\nTăng/giây: +" .. moneyPerSec .. "\nAFK Time: " .. afkTime .. "s\nFPS: " .. currentFPS
+    end
+end)
+
+-- UI - SETTINGS TAB
+TabSettings:AddToggle({
+    Name = "Auto Heal Farm",
+    Default = true,
+    Callback = function(v)
+        _G.AutoHealEnabled = v
+    end
+})
+
+TabSettings:AddToggle({
+    Name = "Auto Mua Băng Gạc",
+    Default = false,
+    Callback = function(v)
+        _G.AutoBuyBandageEnabled = v
+    end
+})
+
+TabSettings:AddSlider({
+    Name = "Số Lượng Băng Tối Thiểu",
+    Min = 1,
+    Max = 100,
+    Default = 50,
+    Callback = function(v)
+        _G.MinBandageCount = v
+    end
+})
+
+TabSettings:AddSlider({
+    Name = "Số Lượng Mua Mỗi Lần",
+    Min = 1,
+    Max = 100,
+    Default = 20,
+    Callback = function(v)
+        _G.BuyQuantity = v
+    end
+})
+
+TabSettings:AddSlider({
+    Name = "Bán Kính Thu Thập",
+    Min = 100,
+    Max = 1000,
+    Default = 500,
+    Callback = function(v)
+        _G.LootDistance = v
+    end
+})
+
+TabSettings:AddToggle({
+    Name = "Auto Nhặt Vật Phẩm",
+    Default = true,
+    Callback = function(v)
+        _G.AutoLootEnabled = v
+    end
+})
+
+TabSettings:AddToggle({
+    Name = "Auto Cầm Vũ Khí",
+    Default = true,
+    Callback = function(v)
+        _G.AutoEquipSlot1Enabled = v
+    end
+})
+
+-- UI - FIX LAG TAB
+local fixLevels = {10, 30, 50, 70}
+
+for _, level in ipairs(fixLevels) do
+    TabFixLag:AddButton({
+        Name = "Fix Lag " .. level .. "%",
+        Callback = function()
+            ApplyLagFix(level)
+        end
+    })
+end
+
+TabFixLag:AddToggle({
+    Name = "Chế Độ Màn Hình Trắng",
+    Default = false,
+    Callback = function(v)
+        whiteScreenEnabled = v
+        
+        if whiteScreenEnabled then
+            whiteScreenGui = Instance.new("ScreenGui")
+            whiteScreenGui.Name = "KiwiWhiteScreen"
+            whiteScreenGui.IgnoreGuiInset = true
+            whiteScreenGui.ResetOnSpawn = false
+            whiteScreenGui.Parent = game:GetService("CoreGui")
+            
+            local whiteFrame = Instance.new("Frame")
+            whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+            whiteFrame.Size = UDim2.new(1, 0, 1, 0)
+            whiteFrame.ZIndex = -10
+            whiteFrame.Parent = whiteScreenGui
+            
+        else
+            if whiteScreenGui then
+                whiteScreenGui:Destroy()
+                whiteScreenGui = nil
+            end
+        end
+    end
+})
+
+TabFixLag:AddButton({
+    Name = "Join Lại Server",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, lp)
+    end
+})
+
+
+-- CHARACTER RESET
+lp.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    Camera.CameraType = Enum.CameraType.Custom
+    
+    local hum = char:WaitForChild("Humanoid", 5)
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    if hum and hrp then
+        hum.AutoRotate = true
+        hum.PlatformStand = false
+        hrp.Anchored = false
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end
+    
+    currentTarget = nil
+    lockedNPC = nil
+    lastSafeCFrame = nil
+end)

@@ -1,0 +1,43 @@
+local Players = game:GetService("Players")
+
+local function checkPvP(player)
+    local isPvpDisabled = player:GetAttribute("PvpDisabled")
+    if isPvpDisabled == true then
+        print(player.Name .. " Pvp Disabled")
+    else
+        print(player.Name .. " Pvp Enabled")
+    end
+end
+
+for _, player in pairs(Players:GetPlayers()) do
+    checkPvP(player)
+end
+
+Players.PlayerAdded:Connect(function(player)
+    print(player.Name .. " joined server")
+    checkPvP(player)
+    
+ player.AttributeChanged:Connect(function(attrName)
+        if attrName == "PvpDisabled" then
+            local status = player:GetAttribute("PvpDisabled")
+            if status == true then
+                print("[Pvpcheck] " .. player.Name .. " Pvp Disabled")
+            else
+                print("[PvpCheck]" .. player.Name .. "Pvp Enabled")
+            end
+        end
+    end)
+end)
+
+for _, player in pairs(Players:GetPlayers()) do
+    player.AttributeChanged:Connect(function(attrName)
+        if attrName == "PvpDisabled" then
+            local status = player:GetAttribute("PvpDisabled")
+            if status == true then
+                print("[Pvp Check]" .. player.Name .. " Pvp Disabled")
+            else
+                print("[CheckPvp] " .. player.Name .. ": Pvp Enabled")
+            end
+        end
+    end)
+end

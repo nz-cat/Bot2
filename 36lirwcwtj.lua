@@ -1,0 +1,1 @@
+tôi là owner github này tôi bị gay

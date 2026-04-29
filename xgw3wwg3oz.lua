@@ -1,0 +1,1 @@
+tôi là @nz.catw là owner github là và owner xhider obfuscater nếu bạn thấy tin này là bạn biết tôi đang sang thái lan để chuyển giới vì tôi thấy tôi không thích hợp làm con trai nên tôi sẽ thành con gái

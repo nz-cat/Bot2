@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/popx20x-del/KRIZ_HUB/main/KRIZ_HUB"))()

